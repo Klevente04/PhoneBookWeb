@@ -8,11 +8,9 @@ const isLoading = ref(true)
 const error = ref(null)
 
 const isFormVisible = ref(false)
-const newContact = ref({
-  name: '',
-  phoneNumber: '',
-  city: ''
-})
+const isEditing = ref(false)
+const newContact = ref({ name: '', phoneNumber: '', city: '' })
+
 const searchQuery = ref('')
 
 // Adatbázis Beolvasása Axios-sal
@@ -30,12 +28,47 @@ async function fetchContacts() {
 
 // Keresés a név alapján
 const filteredContacts = computed(() => {
-  if (searchQuery.value === '') {return contacts.value.sort((a, b) => a.name.localeCompare(b.name))}
+  // Másolat készítése a contacts tömbből, hogy ne módosítsuk az eredetit
+  let result = [...contacts.value] 
 
-  return contacts.value.filter(contact =>
-    contact.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  ).sort((a, b) => a.name.localeCompare(b.name))
+  if (searchQuery.value !== '') {
+    result = result.filter(contact =>
+      contact.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  }
+
+  return result.sort((a, b) => a.name.localeCompare(b.name))
 })
+
+// Forms kontrollálása
+// Forms Hozzáadás
+function openFormAdd() {
+  isFormVisible.value = true
+  isEditing.value = false
+  newContact.value = { name: '', phoneNumber: '', city: '' }
+}
+// Forms Módosítás
+function openFormEdit(contact) {
+  isFormVisible.value = true
+  isEditing.value = true
+  newContact.value = { ...contact }
+}
+// Forms Mentés
+async function submitForm() {
+  let isSuccess = false
+
+  if (isEditing.value) {
+    isSuccess = await updateContact(newContact.value.id, newContact.value)
+  } else {
+    await saveNewContact()
+    isSuccess = true
+  }
+
+  if (isSuccess) {
+    isFormVisible.value = false
+    newContact.value = { name: '', phoneNumber: '', city: '' }
+  }
+}
 
 // Új ügyfél hozzáadása
 async function saveNewContact() {
@@ -47,8 +80,73 @@ async function saveNewContact() {
     newContact.value = { name: '', phoneNumber: '', city: '' }
   } catch (err) {
     console.error('Hiba történt az ügyfél hozzáadásakor:', err)
+    alert('Hiba történt az ügyfél hozzáadásakor!')
   }
 }
+
+// Törlés
+async function deleteContact(contactId) {
+  if (!confirm('Biztosan törölni szeretné az ügyfelet?')) {
+    return 
+  }
+
+  try {
+    await axios.delete(`http://localhost:8080/api/contacts/${contactId}`)
+    contacts.value = contacts.value.filter(contact => contact.id !== contactId)
+  } catch (err) {
+    console.error('Hiba történt az ügyfél törlésekor:', err)
+    alert('Hiba történt az ügyfél törlésekor!')
+  }
+}
+
+// Módosítás
+async function updateContact(contactId, updatedData) {
+  if (!confirm('Biztosan módosítani szeretné az ügyfelet?')) {
+    return false
+  }
+
+  try {
+    const response = await axios.put(`http://localhost:8080/api/contacts/${contactId}`, updatedData)
+    const index = contacts.value.findIndex(contact => contact.id === contactId)
+    if (index !== -1) {
+      contacts.value[index] = response.data
+    }
+    return true
+  } catch (err) {
+    console.error('Hiba történt az ügyfél módosításakor:', err)
+    alert('Hiba történt az ügyfél módosításakor!')
+  }
+}
+
+// Exportálás
+async function exportToVCF() {
+  const contactId = newContact.value.id;
+
+  try {
+    const response = await axios.get(`http://localhost:8080/api/contacts/${contactId}/export`, {
+      responseType: 'blob' 
+    });
+
+    // Letöltött fájl létrehozása és letöltése
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Fájlnév generálása a letöltéshez
+    const fileName = 'Contact_' + newContact.value.name.replace(/\s+/g, '_');
+    link.setAttribute('download', `${fileName}.vcf`);
+    
+    // Rákattintunk a linkre a háttérben, majd eltakarítjuk
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+  } catch (err) {
+    console.error('Hiba történt az exportálás során:', err);
+    alert('Hiba történt a letöltés során!');
+  }
+}
+
 
 // Az adatok betöltése a komponens mountolásakor
 onMounted(() => {
@@ -67,23 +165,24 @@ onMounted(() => {
         placeholder="Keresés ügyfél neve alapján..."
         v-model="searchQuery"
       />
-      <button @click="isFormVisible = true" class="btn btn-add">Új</button>
+      <button @click="openFormAdd()" class="btn btn-add">+</button>
     </div>
 
     <div v-if="isFormVisible" class="form-container">
-      <h3>Új ügyfél rögzítése</h3>
+      <h3>{{ isEditing ? 'Ügyfél módosítása' : 'Ügyfél rögzítése' }}</h3>
       
       <input v-model="newContact.name" placeholder="Név" class="base-input form-input" />
       <input v-model="newContact.phoneNumber" placeholder="Telefonszám" class="base-input form-input" />
       <input v-model="newContact.city" placeholder="Város" class="base-input form-input" />
       
       <div class="form-actions">
-        <button @click="saveNewContact" class="btn btn-add">Mentés</button>
-        <button @click="isFormVisible = false" class="btn btn-delete">Mégse</button>
+        <button v-if="isEditing" @click="exportToVCF()" class="btn btn-export">.VCF Letöltése</button>
+        <button @click="submitForm()" class="btn btn-add">{{ isEditing ? 'Módosítás' : 'Hozzáadás' }}</button>
+        <button @click="isFormVisible = false; newContact = { name: '', phoneNumber: '', city: '' }" class="btn btn-delete">Mégse</button>
       </div>
     </div>
 
-    <p v-if="isLoading">Adatok betöltése folyamatban...</p>
+    <p v-else-if="isLoading">Adatok betöltése folyamatban...</p>
     <p v-else-if="error">Hiba történt az adatok lekérésekor: {{ error }}</p>
     <p v-else-if="filteredContacts.length === 0">A lista üres.</p>
 
@@ -95,8 +194,8 @@ onMounted(() => {
         </div>
 
         <div class="contact-actions">
-          <button class="btn btn-edit">Módosítás</button>
-          <button class="btn btn-delete">Törlés</button>
+          <button class="btn btn-edit" @click="openFormEdit(contact)">Módosítás</button>
+          <button class="btn btn-delete" @click="deleteContact(contact.id)">Törlés</button>
         </div>
       </li>
     </ul>
@@ -220,6 +319,14 @@ ul {
 
 .btn-delete:hover {
   background-color: #962d22;
+}
+
+.btn-export {
+  background-color: #3498db;
+}
+
+.btn-export:hover {
+  background-color: #2980b9;
 }
 
 /* ŰRLAP STÍLUSA */

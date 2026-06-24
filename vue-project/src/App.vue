@@ -26,6 +26,12 @@ async function fetchContacts() {
   }
 }
 
+// Az adatok betöltése a komponens mountolásakor
+onMounted(() => {
+  fetchContacts()
+})
+
+
 // Keresés a név alapján
 const filteredContacts = computed(() => {
   // Másolat készítése a contacts tömbből, hogy ne módosítsuk az eredetit
@@ -55,6 +61,33 @@ function openFormEdit(contact) {
 }
 // Forms Mentés
 async function submitForm() {
+
+  const phoneRegex = /^\+\d{1,3} \d{1,2} \d{3} \d{4}$/;
+  const textRegex = /^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\s]+$/;
+
+  // Itt ténylegesen felülírjuk a Vue változókat: levágjuk a széleket és a dupla szóközöket szimplára cseréljük
+  newContact.value.name = newContact.value.name.trim().replace(/\s+/g, ' ');
+  newContact.value.city = newContact.value.city.trim().replace(/\s+/g, ' ');
+  newContact.value.phoneNumber = newContact.value.phoneNumber.trim().replace(/\s+/g, ' ');
+  
+  // 1. Név ellenőrzése
+  if (newContact.value.name === '' || newContact.value.name.length > 60 || !textRegex.test(newContact.value.name)) {
+    alert('Hibás név! A mező nem lehet üres, és maximum 60 karakter hosszú lehet. Csak betűket és szóközt tartalmazhat.');
+    return;
+  }
+
+  // 2. Város ellenőrzése
+  if (newContact.value.city === '' || newContact.value.city.length > 40 || !textRegex.test(newContact.value.city)) {
+    alert('Hibás város! A mező nem lehet üres, és maximum 40 karakter hosszú lehet. Csak betűket és szóközt tartalmazhat.');
+    return;
+  }
+
+  // 3. Telefonszám ellenőrzése (Regex)
+  if (!phoneRegex.test(newContact.value.phoneNumber)) {
+    alert('A telefonszám formátuma hibás! Helyes formátum: +36 20 123 4567');
+    return;
+  }
+
   let isSuccess = false
 
   if (isEditing.value) {
@@ -146,13 +179,6 @@ async function exportToVCF() {
     alert('Hiba történt a letöltés során!');
   }
 }
-
-
-// Az adatok betöltése a komponens mountolásakor
-onMounted(() => {
-  fetchContacts()
-})
-
 </script>
 
 <template>
@@ -172,7 +198,7 @@ onMounted(() => {
       <h3>{{ isEditing ? 'Ügyfél módosítása' : 'Ügyfél rögzítése' }}</h3>
       
       <input v-model="newContact.name" placeholder="Név" class="base-input form-input" />
-      <input v-model="newContact.phoneNumber" placeholder="Telefonszám" class="base-input form-input" />
+      <input v-model="newContact.phoneNumber" placeholder="Telefonszám (+36 1 123 4567)" class="base-input form-input" />
       <input v-model="newContact.city" placeholder="Város" class="base-input form-input" />
       
       <div class="form-actions">

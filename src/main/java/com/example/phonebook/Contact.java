@@ -4,6 +4,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 @Entity
 public class Contact {
@@ -11,8 +14,25 @@ public class Contact {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotBlank(message = "Name cant be empty")
+    @Size(max = 60, message = "Name can be at most 60 characters")
+    @Pattern(
+        regexp = "^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\\s]+$",
+        message = "Name can only contain letters and spaces")
     private String name;
+
+    @NotBlank(message = "Phone number cant be empty")
+    @Pattern(
+        regexp ="^\\+\\d{1,3} \\d{1,2} \\d{3} \\d{4}$",
+        message = "Phone number format is invalid (+36 1 123 4567)")
     private String phoneNumber;
+
+    @NotBlank(message = "City cant be empty")
+    @Size(max = 40, message = "City can be at most 40 characters")
+    @Pattern(
+        regexp = "^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\\s]+$",
+        message = "City can only contain letters and spaces")
     private String city;
 
     // Üres konstruktor

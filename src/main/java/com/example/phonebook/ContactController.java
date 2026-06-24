@@ -3,10 +3,9 @@ package com.example.phonebook;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
 import java.util.List;
 import java.util.Optional;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/contacts")
@@ -32,13 +31,13 @@ public class ContactController {
 
     // Hozzáadás
     @PostMapping
-    public Contact addContact(@RequestBody Contact newContact) {
+    public Contact addContact(@Valid @RequestBody Contact newContact) {
         return repository.save(newContact);
     }
 
     // Módosítás
     @PutMapping("/{id}")
-    public ResponseEntity<Contact> updateContact(@PathVariable Long id, @RequestBody Contact updatedContact) {
+    public ResponseEntity<Contact> updateContact(@PathVariable Long id, @Valid @RequestBody Contact updatedContact) {
         Optional<Contact> existingContact = repository.findById(id);
         
         // Ellenőrizzük, hogy létezik-e ez az ID az adatbázisban
@@ -68,7 +67,7 @@ public class ContactController {
         }
     }
 
-    // Exportálás CSV formátumban
+    // Exportálás VCF formátumban
     @GetMapping("/{id}/export")
     public ResponseEntity<String> exportContactToVCF(@PathVariable Long id) {
         // Ellenőrizzük, hogy létezik-e ez az ID az adatbázisban

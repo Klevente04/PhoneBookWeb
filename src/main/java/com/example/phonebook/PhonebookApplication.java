@@ -18,9 +18,9 @@ public class PhonebookApplication {
         return args -> {
             // Csak akkor töltjük fel, ha még üres az adatbázis
             if (repository.count() == 0) {
-                repository.save(new Contact("Kovács Gábor", "+36301234567", "Budapest"));
-                repository.save(new Contact("Nagy Anna", "+36209876543", "Debrecen"));
-                repository.save(new Contact("Kiss Péter", "+36705554444", "Gödöllő"));
+                repository.save(new Contact("Kovács Gábor", "+36 30 123 4567", "Budapest"));
+                repository.save(new Contact("Nagy Anna", "+36 20 987 6543", "Debrecen"));
+                repository.save(new Contact("Kiss Péter", "+36 70 555 4444", "Gödöllő"));
                 System.out.println("---- TESZT ADATOK BETÖLTVE A MYSQL-BE! ----");
             }
         };

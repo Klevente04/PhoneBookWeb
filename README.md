@@ -19,6 +19,13 @@ Az ügyfélről mentett információk:
 * **Adatvalidáció:** Csak előre megadott séma alapján lehet értékeket megadni, főleg telefonszám esetén.
 * **vCard (.vcf) Exportálás:** Az ügyfelek adatai a módosítás fülön belül letölthetők, amelyek importálhatóak mobiltelefonokba.
 
+## Képek
+### Kép a listáról
+<img src="./screenshots/listinfo.png" height="400" alt="A telefonkönyv felülete">
+
+### Kép a módosításról
+<img src="./screenshots/modinfo.png" height="400" alt="A telefonkönyv felülete">
+
 ---
 # Futtatás
 

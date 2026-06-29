@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios' // fetch helyett Axios-t használok
 
 axios.defaults.baseURL = 'http://localhost:8080/api/contacts'
@@ -19,8 +19,14 @@ const searchQuery = ref('')
 // Adatbázis Beolvasása Axios-sal
 async function fetchContacts() {
   try {
-    const response = await axios.get('')
+    // Paraméterként a kereső mező
+    const response = await axios.get('', {
+      params: {
+        name: searchQuery.value
+      }
+    })
     contacts.value = response.data
+
   } catch (err) {
     error.value = err.message
     console.error(err)
@@ -29,6 +35,15 @@ async function fetchContacts() {
   }
 }
 
+// Keresőmotor figyelése, adatok betöltése
+let timeout = null
+watch(searchQuery, () => {
+  //  300ms után végezzen csak keresést
+  timeout = setTimeout(() => {
+    fetchContacts();
+  }, 300);
+})
+
 // Az adatok betöltése a komponens mountolásakor
 onMounted(() => {
   fetchContacts()
@@ -36,17 +51,10 @@ onMounted(() => {
 
 
 // -- CRUD FÜGGVÉNYEK --
-// Keresés a név alapján
+// Keresés a név alapján (Üres sor esetén minden)
 const filteredContacts = computed(() => {
-  // Másolat készítése a contacts tömbből, hogy ne módosítsuk az eredetit
-  let result = [...contacts.value] 
-
-  if (searchQuery.value !== '') {
-    result = result.filter(contact =>
-      contact.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  }
-
+  // Másolat készítése a contacts tömbből, ABC sorrend
+  let result = [...contacts.value]
   return result.sort((a, b) => a.name.localeCompare(b.name))
 })
 
